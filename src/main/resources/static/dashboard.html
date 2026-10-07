@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+}
+
+/* HEADER */
+.header {
+    height: 60px;
+    background: #0d6efd;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    background: #1e3c72;
+    color: white;
+    position: fixed;
+    top: 60px;
+    padding-top: 20px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 12px;
+    color: white;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background: #2a5298;
+}
+
+/* CONTENT */
+.content {
+    margin-left: 220px;
+    margin-top: 60px;
+    padding: 20px;
+}
+
+.card-box {
+    padding: 20px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <h5>🎓 Student Management System</h5>
+    <div>
+        <span id="welcomeText"></span>
+        <button class="btn btn-light btn-sm ms-2" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <a href="#" onclick="loadHome()">🏠 Home</a>
+
+<a href="#" onclick="loadStudents()">👨‍🎓 Students</a>
+
+<a href="#" onclick="loadPending()">
+    ⏳ Pending Requests
+</a>
+
+<a href="#" onclick="loadAddAdmin()">
+    ➕ Add Admin
+</a>
+
+<a href="#" onclick="loadProfile()">
+    👤 Profile
+</a>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+    <div id="mainContent" class="card-box">
+        Loading...
+    </div>
+</div>
+
+<script>
+
+// 🔒 ROLE CHECK
+if(localStorage.getItem("role") !== "ADMIN") {
+    window.location.href = "/";
+}
+
+// 🔒 TOKEN CHECK
+if(!localStorage.getItem("token")) {
+    window.location.href = "/";
+}
+
+// Welcome
+window.onload = function() {
+    let user = localStorage.getItem("username");
+    document.getElementById("welcomeText").innerText = "Welcome " + user;
+    loadHome();
+};
+
+// Logout
+function logout() {
+    localStorage.clear();
+    window.location.href = "/";
+}
+
+// HOME
+function loadHome() {
+
+    document.getElementById("mainContent").innerHTML = `
+        <h4>Dashboard</h4>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <h5>Total Students</h5>
+                    <h2 id="totalStudents">0</h2>
+                </div>
+            </div>
+        </div>
+    `;
+
+    fetch("http://localhost:8080/students", {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("totalStudents").innerText = data.length;
+    });
+}
+
+// LOAD STUDENTS
+function loadStudents() {
+
+    fetch("http://localhost:8080/students", {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(Array.isArray(data)) {
+            renderStudents(data);
+        }
+    });
+}
+
+
+//🔥 LOAD PENDING REQUESTS
+function loadPending() {
+
+    fetch("http://localhost:8080/auth/pending")
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        let html = `
+        <h3 class="mb-4">Pending Student Requests</h3>
+        `;
+
+        if(data.length === 0){
+
+            html += `
+            <div class="alert alert-success">
+                No pending requests
+            </div>
+            `;
+
+        } else {
+
+            data.forEach(u => {
+
+                html += `
+
+                <div class="card p-3 mb-3 shadow-sm">
+
+                    <h5>${u.username}</h5>
+
+                    <p>
+                        Status:
+                        <span class="badge bg-warning">
+                            ${u.status}
+                        </span>
+                    </p>
+
+                    <div>
+
+                        <button class="btn btn-success me-2"
+                                onclick="approveStudent('${u.username}')">
+                            Approve
+                        </button>
+
+                        <button class="btn btn-danger"
+                                onclick="rejectStudent('${u.username}')">
+                            Reject
+                        </button>
+
+                    </div>
+
+                </div>
+                `;
+            });
+        }
+
+        document.getElementById("mainContent").innerHTML = html;
+
+    });
+
+}
+
+
+//🔥 APPROVE
+function approveStudent(username){
+
+    fetch("http://localhost:8080/auth/approve/" + username,{
+
+        method:"PUT"
+
+    })
+
+    .then(res => res.text())
+
+    .then(data => {
+
+    	Swal.fire({
+    	    icon:'success',
+    	    title:data
+    	});
+
+        loadPending();
+
+    });
+
+}
+
+// 🔥 REJECT
+function rejectStudent(username){
+
+    fetch("http://localhost:8080/auth/reject/" + username,{
+
+        method:"DELETE"
+
+    })
+
+    .then(res => res.text())
+
+    .then(data => {
+
+    	Swal.fire({
+    	    icon:'success',
+    	    title:data
+    	});
+        loadPending();
+
+    });
+
+}
+
+// RENDER STUDENTS
+function renderStudents(data) {
+
+    let html = `
+    <h4>Student Management</h4>
+
+    <input id="search" class="form-control mb-2" placeholder="Search by name">
+    <button class="btn btn-info mb-3" onclick="searchStudent()">Search</button>
+
+    <div class="card p-3 mb-3">
+        <input id="id" class="form-control mb-2" placeholder="ID">
+        <input id="name" class="form-control mb-2" placeholder="Name">
+        <input id="age" class="form-control mb-2" placeholder="Age">
+        <input id="course" class="form-control mb-2" placeholder="Course">
+        <input id="stream" class="form-control mb-2" placeholder="Stream">
+        <input id="dob" class="form-control mb-2" placeholder="DOB">
+        <input id="email" class="form-control mb-2" placeholder="Email">
+        <input id="mobile" class="form-control mb-2" placeholder="Mobile">
+
+        <button class="btn btn-primary" onclick="addOrUpdateStudent()">Save</button>
+    </div>
+
+    <ul class="list-group">`;
+
+    data.forEach(s => {
+
+    html += `
+    <li class="list-group-item">
+    
+    	<img src="${s.profilePhoto}"
+    	width="120"
+    	height="120"
+    	style="
+    	border-radius:50%;
+    	object-fit:cover;
+    	margin-bottom:15px;
+    	border:3px solid #0d6efd;
+    	">
+
+        <h5>${s.name}</h5>
+
+        <p><strong>ID:</strong> ${s.id}</p>
+
+        <p><strong>Age:</strong> ${s.age}</p>
+
+        <p><strong>Course:</strong> ${s.course}</p>
+
+        <p><strong>Stream:</strong> ${s.stream}</p>
+
+        <p><strong>DOB:</strong> ${s.dob}</p>
+
+        <p><strong>Email:</strong> ${s.email}</p>
+
+        <p><strong>Mobile:</strong> ${s.mobile}</p>
+
+        <p><strong>Username:</strong> ${s.username}</p>
+
+        <div class="mt-2">
+
+            <button class="btn btn-warning btn-sm me-2"
+                onclick="editStudent(
+                    ${s.id},
+                    '${s.name}',
+                    ${s.age},
+                    '${s.course}',
+                    '${s.stream}',
+                    '${s.dob}',
+                    '${s.email}',
+                    '${s.mobile}'
+                )">
+
+                Edit
+
+            </button>
+
+            <button class="btn btn-danger btn-sm"
+                onclick="deleteStudent(${s.id})">
+
+                Delete
+
+            </button>
+
+        </div>
+
+    </li>
+    `;
+});
+
+    html += "</ul>";
+
+    document.getElementById("mainContent").innerHTML = html;
+}
+
+// ADD / UPDATE
+function addOrUpdateStudent() {
+
+    let id = document.getElementById("id").value;
+
+    fetch("http://localhost:8080/students/" + id, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        },
+        body: JSON.stringify({
+
+            id: id,
+
+            name: document.getElementById("name").value,
+
+            age: document.getElementById("age").value,
+
+            course: document.getElementById("course").value,
+
+            stream: document.getElementById("stream").value,
+
+            dob: document.getElementById("dob").value,
+
+            email: document.getElementById("email").value,
+
+            mobile: document.getElementById("mobile").value
+        })
+    })
+    .then(() => loadStudents());
+}
+
+// EDIT
+function editStudent(
+    id,
+    name,
+    age,
+    course,
+    stream,
+    dob,
+    email,
+    mobile
+) {
+
+    document.getElementById("id").value = id;
+    document.getElementById("name").value = name;
+    document.getElementById("age").value = age;
+    document.getElementById("course").value = course;
+
+    document.getElementById("stream").value = stream;
+    document.getElementById("dob").value = dob;
+    document.getElementById("email").value = email;
+    document.getElementById("mobile").value = mobile;
+}
+
+// DELETE
+function deleteStudent(id){
+
+    Swal.fire({
+        title:'Delete Student?',
+        text:'This action cannot be undone',
+        icon:'warning',
+        showCancelButton:true,
+        confirmButtonText:'Delete'
+    })
+
+    .then((result)=>{
+
+        if(result.isConfirmed){
+
+            fetch("http://localhost:8080/students/" + id,{
+
+                method:"DELETE",
+
+                headers:{
+                    "Authorization":
+                    "Bearer " + localStorage.getItem("token")
+                }
+            })
+
+            .then(()=>{
+
+                Swal.fire({
+                    icon:'success',
+                    title:'Student Deleted'
+                });
+
+                loadStudents();
+            });
+        }
+
+    });
+}
+
+// SEARCH
+function searchStudent() {
+
+    let name = document.getElementById("search").value;
+
+    fetch("http://localhost:8080/students/search/" + name, {
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    })
+    .then(res => res.json())
+    .then(data => renderStudents(data));
+}
+
+// PROFILE
+function loadProfile() {
+
+    let username =
+        localStorage.getItem("username");
+
+
+    document.getElementById("mainContent").innerHTML = `
+
+        <h4 class="mb-4">
+            👤 My Admin Profile
+        </h4>
+
+
+        <div class="card p-4 shadow-sm"
+             style="max-width:600px">
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="newUsername"
+                    class="form-control"
+                    value="${username}"
+                >
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    New Password
+                </label>
+
+                <input
+                    type="password"
+                    id="newPassword"
+                    class="form-control"
+                    placeholder="Leave blank to keep current password"
+                >
+
+            </div>
+
+
+            <div class="alert alert-info">
+
+                <strong>Role:</strong> ADMIN
+
+                <br>
+
+                <strong>Status:</strong> Active
+
+            </div>
+
+
+            <button
+                class="btn btn-primary"
+                onclick="updateMyProfile()">
+
+                Save Changes
+
+            </button>
+
+        </div>
+    `;
+}
+
+// load Admin
+function loadAddAdmin() {
+
+    document.getElementById("mainContent").innerHTML = `
+
+        <h4 class="mb-4">
+            ➕ Add New Administrator
+        </h4>
+
+
+        <div class="card p-4 shadow-sm"
+             style="max-width:600px">
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    New Admin Username
+                </label>
+
+                <input
+                    type="text"
+                    id="adminUsername"
+                    class="form-control"
+                    placeholder="Enter username"
+                >
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="adminPassword"
+                    class="form-control"
+                    placeholder="Minimum 6 characters"
+                >
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Confirm Password
+                </label>
+
+                <input
+                    type="password"
+                    id="adminConfirmPassword"
+                    class="form-control"
+                    placeholder="Confirm password"
+                >
+
+            </div>
+
+
+            <button
+                class="btn btn-success"
+                onclick="createAdmin()">
+
+                Create Admin
+
+            </button>
+
+        </div>
+    `;
+}
+
+// create Admin
+function createAdmin() {
+
+    let username =
+        document.getElementById(
+            "adminUsername"
+        ).value.trim();
+
+
+    let password =
+        document.getElementById(
+            "adminPassword"
+        ).value;
+
+
+    let confirmPassword =
+        document.getElementById(
+            "adminConfirmPassword"
+        ).value;
+
+
+    if(!username || !password || !confirmPassword) {
+
+        Swal.fire({
+            icon: "warning",
+            title: "All fields are required"
+        });
+
+        return;
+    }
+
+
+    if(password.length < 6) {
+
+        Swal.fire({
+            icon: "warning",
+            title: "Weak Password",
+            text: "Password must contain at least 6 characters"
+        });
+
+        return;
+    }
+
+
+    if(password !== confirmPassword) {
+
+        Swal.fire({
+            icon: "error",
+            title: "Passwords do not match"
+        });
+
+        return;
+    }
+
+
+    fetch(
+        "http://localhost:8080/auth/admin/create",
+        {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                "Authorization":
+                    "Bearer " +
+                    localStorage.getItem("token")
+            },
+
+            body: JSON.stringify({
+
+                username: username,
+                password: password
+
+            })
+        }
+    )
+
+
+    .then(res => res.text())
+
+
+    .then(data => {
+
+        if(data.includes("successfully")) {
+
+            Swal.fire({
+                icon: "success",
+                title: "Admin Created",
+                text: data
+            });
+
+
+            loadProfile();
+
+        } else {
+
+            Swal.fire({
+                icon: "error",
+                title: "Unable to Create Admin",
+                text: data
+            });
+        }
+
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        Swal.fire({
+            icon: "error",
+            title: "Server Error"
+        });
+    });
+}
+
+//update profile
+function updateMyProfile() {
+
+    let newUsername =
+        document.getElementById(
+            "newUsername"
+        ).value.trim();
+
+
+    let newPassword =
+        document.getElementById(
+            "newPassword"
+        ).value;
+
+
+    if(!newUsername) {
+
+        Swal.fire({
+            icon: "warning",
+            title: "Username cannot be empty"
+        });
+
+        return;
+    }
+
+
+    fetch(
+        "http://localhost:8080/auth/profile",
+        {
+
+            method: "PUT",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                "Authorization":
+                    "Bearer " +
+                    localStorage.getItem("token")
+            },
+
+            body: JSON.stringify({
+
+                newUsername: newUsername,
+                newPassword: newPassword
+
+            })
+        }
+    )
+
+
+    .then(res => res.text())
+
+
+    .then(data => {
+
+        if(
+            data === "New username already exists" ||
+            data.includes("Unable") ||
+            data.includes("Unauthorized")
+        ) {
+
+            Swal.fire({
+                icon: "error",
+                title: "Update Failed",
+                text: data
+            });
+
+            return;
+        }
+
+
+        // Backend returns NEW JWT
+
+        localStorage.setItem(
+            "token",
+            data
+        );
+
+
+        // Decode NEW JWT
+
+        let payload =
+            JSON.parse(
+                atob(data.split(".")[1])
+            );
+
+
+        localStorage.setItem(
+            "username",
+            payload.sub
+        );
+
+
+        localStorage.setItem(
+            "role",
+            payload.role
+        );
+
+
+        Swal.fire({
+            icon: "success",
+            title: "Profile Updated",
+            text: "Your username/password has been updated."
+        });
+
+
+        setTimeout(() => {
+
+            loadProfile();
+
+            document.getElementById(
+                "welcomeText"
+            ).innerText =
+                "Welcome " +
+                localStorage.getItem("username");
+
+        }, 1000);
+
+    });
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+</html>

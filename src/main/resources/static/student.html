@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Student Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+/* HEADER */
+
+.header{
+    height:60px;
+    background:#198754;
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 20px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* SIDEBAR */
+
+.sidebar{
+    width:220px;
+    height:100vh;
+    background:#14532d;
+    position:fixed;
+    top:60px;
+    color:white;
+    padding-top:20px;
+}
+
+.sidebar a{
+    display:block;
+    padding:14px;
+    color:white;
+    text-decoration:none;
+    font-size:16px;
+    transition:0.3s;
+}
+
+.sidebar a:hover{
+    background:#166534;
+}
+
+/* CONTENT */
+
+.content{
+    margin-left:220px;
+    margin-top:60px;
+    padding:30px;
+}
+
+.card-box{
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+input{
+    height:45px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+    <h4>Student Dashboard</h4>
+
+    <div>
+        <span id="welcomeText"></span>
+
+        <button class="btn btn-light btn-sm ms-2"
+        onclick="logout()">
+
+            Logout
+
+        </button>
+    </div>
+
+</div>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+    <a href="#" onclick="loadMyData()">
+        My Data
+    </a>
+
+    <a href="#" onclick="loadProfile()">
+        Profile
+    </a>
+
+</div>
+
+<!-- CONTENT -->
+
+<div class="content">
+
+    <div id="mainContent" class="card-box">
+
+        Loading...
+
+    </div>
+
+</div>
+
+<script>
+
+let base64Image = "";
+
+// ROLE SECURITY
+
+if(localStorage.getItem("role") !== "STUDENT"){
+
+    window.location.href = "/";
+}
+
+// TOKEN SECURITY
+
+if(!localStorage.getItem("token")){
+
+    window.location.href = "/";
+}
+
+// PAGE LOAD
+
+window.onload = () => {
+
+    document.getElementById("welcomeText").innerText =
+        "Welcome " + localStorage.getItem("username");
+
+    loadMyData();
+};
+
+// LOGOUT
+
+function logout(){
+
+    localStorage.clear();
+
+    window.location.href = "/";
+}
+
+// LOAD MY DATA
+
+function loadMyData(){
+
+    fetch("http://localhost:8080/students/my",{
+
+        headers:{
+            "Authorization":
+            "Bearer " + localStorage.getItem("token")
+        }
+
+    })
+
+    .then(res => {
+
+        if(res.status === 404){
+            return null;
+        }
+
+        return res.json();
+    })
+
+    .then(data => {
+
+        // NO PROFILE FOUND
+
+        if(!data){
+
+            showCreateForm();
+
+            return;
+        }
+
+        // SHOW STUDENT DATA
+
+        document.getElementById("mainContent").innerHTML = `
+
+        	<h2 class="mb-4">My Details</h2>
+
+        	${
+        	    data.profilePhoto ?
+
+        	    `<img src="${data.profilePhoto}"
+        	    width="150"
+        	    height="150"
+        	    style="
+        	    border-radius:50%;
+        	    object-fit:cover;
+        	    margin-bottom:20px;
+        	    border:4px solid #198754;
+        	    ">`
+
+        	    		:
+
+        	    			`<img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+        	    			width="150"
+        	    			height="150"
+        	    			style="
+        	    			border-radius:50%;
+        	    			object-fit:cover;
+        	    			margin-bottom:20px;
+        	    			border:4px solid #198754;
+        	    			">` 
+        	}
+
+        	<div class="card p-4 shadow-sm">
+
+        	    <p><strong>Name:</strong> ${data.name}</p>
+
+        	    <p><strong>Age:</strong> ${data.age}</p>
+
+        	    <p><strong>Course:</strong> ${data.course}</p>
+
+        	    <p><strong>Stream:</strong> ${data.stream}</p>
+
+        	    <p><strong>DOB:</strong> ${data.dob}</p>
+
+        	    <p><strong>Email:</strong> ${data.email}</p>
+
+        	    <p><strong>Mobile:</strong> ${data.mobile}</p>
+
+        	</div>
+
+        	<button class="btn btn-warning mt-3"
+
+        	onclick="edit(
+        	    ${data.id},
+        	    '${data.email}',
+        	    '${data.mobile}',
+        	    '${data.dob}'
+        	)">
+
+        	    Edit Profile
+
+        	</button>
+        	`;
+    });
+}
+
+// CREATE PROFILE FORM
+
+function showCreateForm(){
+
+    document.getElementById("mainContent").innerHTML = `
+
+        <h2 class="mb-4">Complete Your Profile</h2>
+
+        <input id="name"
+        class="form-control mb-2"
+        placeholder="Name">
+
+        <input id="age"
+        class="form-control mb-2"
+        placeholder="Age">
+
+        <input id="course"
+        class="form-control mb-2"
+        placeholder="Course">
+
+        <input id="stream"
+        class="form-control mb-2"
+        placeholder="Stream">
+
+        <input id="dob"
+        class="form-control mb-2"
+        placeholder="DOB">
+
+        <input id="email"
+        class="form-control mb-2"
+        placeholder="Email">
+
+        <input id="mobile"
+        class="form-control mb-3"
+        placeholder="Mobile">
+        
+        <input type="file"
+        	id="photo"
+        	class="form-control mb-3"
+        	onchange="convertImage()">
+
+        <button class="btn btn-success"
+        onclick="save()">
+
+            Save Profile
+
+        </button>
+    `;
+}
+
+
+
+function convertImage(){
+
+    let file =
+    document.getElementById("photo").files[0];
+
+    if(!file){
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onloadend = function(){
+
+        base64Image = reader.result;
+
+        console.log("Image Converted");
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// SAVE PROFILE
+
+function save(){
+
+    fetch("http://localhost:8080/students",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json",
+
+            "Authorization":
+            "Bearer " + localStorage.getItem("token")
+        },
+
+        body: JSON.stringify({
+
+            name: document.getElementById("name").value,
+
+            age: document.getElementById("age").value,
+
+            course: document.getElementById("course").value,
+
+            stream: document.getElementById("stream").value,
+
+            dob: document.getElementById("dob").value,
+
+            email: document.getElementById("email").value,
+
+            mobile: document.getElementById("mobile").value,
+            
+            profilePhoto: base64Image
+        })
+    })
+
+    .then(() => loadMyData());
+}
+
+// EDIT PROFILE
+
+function edit(id, email, mobile, dob){
+
+    document.getElementById("mainContent").innerHTML = `
+
+        <h2 class="mb-4">Edit Profile</h2>
+
+        <input id="email"
+        class="form-control mb-2"
+        placeholder="Email"
+        value="${email}">
+
+        <input id="mobile"
+        class="form-control mb-2"
+        placeholder="Mobile"
+        value="${mobile}">
+
+        <input id="dob"
+        class="form-control mb-3"
+        placeholder="DOB"
+        value="${dob}">
+        
+        <input type="file"
+        	id="photo"
+        	class="form-control mb-3"
+        	onchange="convertImage()">
+
+        <button class="btn btn-primary"
+
+        onclick="update(${id})">
+
+            Update
+
+        </button>
+    `;
+}
+
+
+// UPDATE PROFILE
+
+function update(id){
+
+    fetch("http://localhost:8080/students/" + id,{
+
+        method:"PUT",
+
+        headers:{
+            "Content-Type":"application/json",
+
+            "Authorization":
+            "Bearer " + localStorage.getItem("token")
+        },
+
+        body: JSON.stringify({
+
+            email: document.getElementById("email").value,
+
+            mobile: document.getElementById("mobile").value,
+
+            dob: document.getElementById("dob").value,
+
+            profilePhoto: base64Image
+        })
+    })
+
+    .then(() => {
+
+        Swal.fire({
+            icon:'success',
+            title:'Profile Updated'
+        });
+
+        loadMyData();
+    });
+}
+
+// PROFILE SECTION
+
+function loadProfile(){
+
+    let username =
+        localStorage.getItem("username");
+
+
+    document.getElementById(
+        "mainContent"
+    ).innerHTML = `
+
+        <h2 class="mb-4">
+            👤 My Profile
+        </h2>
+
+
+        <div class="card p-4 shadow-sm"
+             style="max-width:600px">
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="newUsername"
+                    class="form-control"
+                    value="${username}"
+                >
+
+            </div>
+
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    New Password
+                </label>
+
+                <input
+                    type="password"
+                    id="newPassword"
+                    class="form-control"
+                    placeholder="Leave blank to keep current password"
+                >
+
+            </div>
+
+
+            <div class="alert alert-success">
+
+                <strong>Role:</strong> STUDENT
+
+                <br>
+
+                <strong>Status:</strong> Active
+
+            </div>
+
+
+            <button
+                class="btn btn-success"
+                onclick="updateStudentCredentials()">
+
+                Save Changes
+
+            </button>
+
+        </div>
+    `;
+}
+
+//update student credentials
+function updateStudentCredentials() {
+
+    let newUsername =
+        document.getElementById(
+            "newUsername"
+        ).value.trim();
+
+
+    let newPassword =
+        document.getElementById(
+            "newPassword"
+        ).value;
+
+
+    if(!newUsername) {
+
+        Swal.fire({
+            icon: "warning",
+            title: "Username cannot be empty"
+        });
+
+        return;
+    }
+
+
+    fetch(
+        "http://localhost:8080/auth/profile",
+        {
+
+            method: "PUT",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                "Authorization":
+                    "Bearer " +
+                    localStorage.getItem("token")
+            },
+
+            body: JSON.stringify({
+
+                newUsername: newUsername,
+                newPassword: newPassword
+
+            })
+        }
+    )
+
+
+    .then(res => res.text())
+
+
+    .then(data => {
+
+        if(
+            data === "New username already exists" ||
+            data.includes("Unable") ||
+            data.includes("Unauthorized")
+        ) {
+
+            Swal.fire({
+                icon: "error",
+                title: "Update Failed",
+                text: data
+            });
+
+            return;
+        }
+
+
+        // Save NEW TOKEN
+
+        localStorage.setItem(
+            "token",
+            data
+        );
+
+
+        // Decode token
+
+        let payload =
+            JSON.parse(
+                atob(data.split(".")[1])
+            );
+
+
+        localStorage.setItem(
+            "username",
+            payload.sub
+        );
+
+
+        localStorage.setItem(
+            "role",
+            payload.role
+        );
+
+
+        Swal.fire({
+            icon: "success",
+            title: "Profile Updated"
+        });
+
+
+        setTimeout(() => {
+
+            document.getElementById(
+                "welcomeText"
+            ).innerText =
+                "Welcome " +
+                localStorage.getItem("username");
+
+            loadProfile();
+
+        }, 1000);
+
+    });
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+</html>

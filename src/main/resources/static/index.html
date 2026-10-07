@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Student Management System</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    padding:0;
+    height:100vh;
+    background: linear-gradient(135deg,#1e3c72,#2a5298);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:Arial;
+}
+
+.main-box{
+    width:900px;
+    background:white;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:0 0 25px rgba(0,0,0,0.3);
+    display:flex;
+}
+
+.left{
+    width:40%;
+    background:linear-gradient(135deg,#0d6efd,#00b4db);
+    color:white;
+    padding:40px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+
+.left h1{
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.left p{
+    text-align:center;
+}
+
+.right{
+    width:60%;
+    padding:40px;
+    overflow-y:auto;
+    max-height:90vh;
+}
+
+.form-title{
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.hidden{
+    display:none;
+}
+
+.btn-custom{
+    width:100%;
+}
+
+.switch-btn{
+    cursor:pointer;
+    color:#0d6efd;
+    font-weight:bold;
+}
+
+input,select{
+    margin-bottom:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="main-box">
+
+    <!-- LEFT -->
+    <div class="left">
+        <h1>🎓 SMS Portal</h1>
+
+        <p>
+            Student Management System with
+            secure login and approval system.
+        </p>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+
+        <!-- LOGIN FORM -->
+<div id="loginForm">
+
+    <h3 class="form-title">Login</h3>
+
+    <h6 class="mb-3">Login as:</h6>
+
+    <div class="d-flex gap-2 mb-3">
+
+        <button type="button"
+                id="adminRoleBtn"
+                class="btn btn-outline-primary w-50"
+                onclick="selectRole('ADMIN')">
+
+            👨‍💼 Admin
+        </button>
+
+        <button type="button"
+                id="studentRoleBtn"
+                class="btn btn-outline-success w-50"
+                onclick="selectRole('STUDENT')">
+
+            👨‍🎓 Student
+        </button>
+
+    </div>
+
+    <input type="hidden"
+           id="loginRole"
+           value="STUDENT">
+
+
+    <input type="text"
+           id="loginUsername"
+           class="form-control"
+           placeholder="Username">
+
+
+    <input type="password"
+           id="loginPassword"
+           class="form-control"
+           placeholder="Password">
+
+
+    <button class="btn btn-primary btn-custom"
+            onclick="login()">
+
+        Login
+
+    </button>
+
+
+    <!-- ONLY STUDENT SEES THIS -->
+
+    <p id="studentRegisterText"
+       class="mt-3 text-center">
+
+        New student?
+
+        <span class="switch-btn"
+              onclick="showRegister()">
+
+            Request Registration
+
+        </span>
+
+    </p>
+
+
+    <p id="loginMsg"
+       class="text-danger"></p>
+
+</div>
+        <!-- REGISTER FORM -->
+        <div id="registerForm" class="hidden">
+
+            <h3 class="form-title">Create Student Account</h3>
+
+            <input type="text" id="name"
+                   class="form-control"
+                   placeholder="Full Name">
+
+            <input type="text" id="dob"
+                   class="form-control"
+                   placeholder="DOB (DD/MM/YYYY)">
+
+            <input type="number" id="age"
+                   class="form-control"
+                   placeholder="Age">
+
+            <input type="text" id="course"
+                   class="form-control"
+                   placeholder="Course">
+
+            <input type="text" id="stream"
+                   class="form-control"
+                   placeholder="Stream">
+
+            <input type="email" id="email"
+                   class="form-control"
+                   placeholder="Email">
+
+            <input type="text" id="mobile"
+                   class="form-control"
+                   maxlength="10"
+                   placeholder="Mobile Number">
+
+            <input type="text" id="username"
+                   class="form-control"
+                   placeholder="Username">
+
+            <input type="password" id="password"
+                   class="form-control"
+                   placeholder="Password">
+
+            <button class="btn btn-success btn-custom"
+                    onclick="register()">
+                Create Account
+            </button>
+
+            <p class="mt-3 text-center">
+                Already have account?
+                <span class="switch-btn"
+                      onclick="showLogin()">
+                    Login
+                </span>
+            </p>
+
+            <p id="registerMsg"></p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+// SHOW REGISTER
+function showRegister(){
+    document.getElementById("loginForm").classList.add("hidden");
+    document.getElementById("registerForm").classList.remove("hidden");
+}
+
+// SHOW LOGIN
+function showLogin(){
+    document.getElementById("registerForm").classList.add("hidden");
+    document.getElementById("loginForm").classList.remove("hidden");
+}
+
+// LOGIN
+function selectRole(role) {
+
+    document.getElementById("loginRole").value = role;
+
+
+    let adminBtn =
+        document.getElementById("adminRoleBtn");
+
+    let studentBtn =
+        document.getElementById("studentRoleBtn");
+
+
+    if(role === "ADMIN") {
+
+        adminBtn.classList.remove(
+            "btn-outline-primary"
+        );
+
+        adminBtn.classList.add(
+            "btn-primary"
+        );
+
+
+        studentBtn.classList.remove(
+            "btn-success"
+        );
+
+        studentBtn.classList.add(
+            "btn-outline-success"
+        );
+
+
+        // Hide student registration
+
+        document.getElementById(
+            "studentRegisterText"
+        ).style.display = "none";
+
+
+    } else {
+
+        studentBtn.classList.remove(
+            "btn-outline-success"
+        );
+
+        studentBtn.classList.add(
+            "btn-success"
+        );
+
+
+        adminBtn.classList.remove(
+            "btn-primary"
+        );
+
+        adminBtn.classList.add(
+            "btn-outline-primary"
+        );
+
+
+        // Show student registration
+
+        document.getElementById(
+            "studentRegisterText"
+        ).style.display = "block";
+    }
+}
+
+
+
+function login() {
+
+    let username =
+        document.getElementById(
+            "loginUsername"
+        ).value.trim();
+
+
+    let password =
+        document.getElementById(
+            "loginPassword"
+        ).value.trim();
+
+
+    let role =
+        document.getElementById(
+            "loginRole"
+        ).value;
+
+
+    if(!username || !password) {
+
+        Swal.fire({
+            icon: "warning",
+            title: "Missing Fields",
+            text: "Please enter username and password"
+        });
+
+        return;
+    }
+
+
+    Swal.fire({
+        title: "Logging in...",
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+
+    fetch("http://localhost:8080/auth/login", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+            username: username,
+            password: password,
+            role: role
+
+        })
+
+    })
+
+
+    .then(res => res.text())
+
+
+    .then(data => {
+
+        Swal.close();
+
+
+        // ERRORS
+
+        if(data === "User not found") {
+
+            Swal.fire({
+                icon: "error",
+                title: "User Not Found"
+            });
+
+            return;
+        }
+
+
+        if(data === "Invalid password") {
+
+            Swal.fire({
+                icon: "error",
+                title: "Wrong Password"
+            });
+
+            return;
+        }
+
+
+        if(data === "Account pending approval") {
+
+            Swal.fire({
+                icon: "info",
+                title: "Pending Approval",
+                text: "Admin approval is required"
+            });
+
+            return;
+        }
+
+
+        if(data.startsWith("Wrong role")) {
+
+            Swal.fire({
+                icon: "error",
+                title: "Wrong Login Type",
+                text: data
+            });
+
+            return;
+        }
+
+
+        // JWT TOKEN
+
+        localStorage.setItem(
+            "token",
+            data
+        );
+
+
+        // DECODE TOKEN
+
+        let payload =
+            JSON.parse(
+                atob(data.split(".")[1])
+            );
+
+
+        let username =
+            payload.sub;
+
+
+        let userRole =
+            payload.role;
+
+
+        localStorage.setItem(
+            "username",
+            username
+        );
+
+
+        localStorage.setItem(
+            "role",
+            userRole
+        );
+
+
+        Swal.fire({
+            icon: "success",
+            title: "Login Successful",
+            timer: 1000,
+            showConfirmButton: false
+        });
+
+
+        setTimeout(() => {
+
+            if(userRole === "ADMIN") {
+
+                window.location.href =
+                    "dashboard.html";
+
+            } else {
+
+                window.location.href =
+                    "student.html";
+            }
+
+        }, 1000);
+
+    })
+
+    .catch(error => {
+
+        Swal.close();
+
+        Swal.fire({
+            icon: "error",
+            title: "Server Error",
+            text: "Unable to connect to server"
+        });
+
+        console.error(error);
+    });
+}
+
+// REGISTER
+function register(){
+
+    let name =
+    document.getElementById("name").value.trim();
+
+    let dob =
+    document.getElementById("dob").value.trim();
+
+    let age =
+    document.getElementById("age").value.trim();
+
+    let course =
+    document.getElementById("course").value.trim();
+
+    let stream =
+    document.getElementById("stream").value.trim();
+
+    let email =
+    document.getElementById("email").value.trim();
+
+    let mobile =
+    document.getElementById("mobile").value.trim();
+
+    let username =
+    document.getElementById("username").value.trim();
+
+    let password =
+    document.getElementById("password").value.trim();
+
+    // REQUIRED VALIDATION
+
+    if(
+        !name || !dob || !age || !course ||
+        !stream || !email || !mobile ||
+        !username || !password
+    ){
+
+        Swal.fire({
+            icon:'warning',
+            title:'All fields required'
+        });
+
+        return;
+    }
+
+    // EMAIL VALIDATION
+
+    let emailPattern =
+    /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/;
+
+    if(!emailPattern.test(email)){
+
+        Swal.fire({
+            icon:'error',
+            title:'Invalid Email'
+        });
+
+        return;
+    }
+
+    // MOBILE VALIDATION
+
+    if(!/^\d{10}$/.test(mobile)){
+
+        Swal.fire({
+            icon:'error',
+            title:'Invalid Mobile Number'
+        });
+
+        return;
+    }
+
+    // PASSWORD VALIDATION
+
+    if(password.length < 6){
+
+        Swal.fire({
+            icon:'error',
+            title:'Weak Password',
+            text:'Minimum 6 characters required'
+        });
+
+        return;
+    }
+
+    Swal.fire({
+        title:'Creating Account...',
+        allowOutsideClick:false,
+        didOpen:()=>{
+            Swal.showLoading();
+        }
+    });
+
+    fetch("http://localhost:8080/auth/register",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            name:name,
+            dob:dob,
+            age:age,
+            course:course,
+            stream:stream,
+            email:email,
+            mobile:mobile,
+            username:username,
+            password:password
+
+        })
+
+    })
+
+    .then(res=>res.text())
+
+    .then(data=>{
+
+        Swal.close();
+
+        if(data.includes("successfully")){
+
+            Swal.fire({
+                icon:'success',
+                title:'Account Created',
+                text:'Wait for admin approval'
+            });
+
+            showLogin();
+
+        }else{
+
+            Swal.fire({
+                icon:'error',
+                title:'Registration Failed',
+                text:data
+            });
+        }
+
+    });
+}
+window.onload = function() {
+    selectRole("STUDENT");
+};
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+</body>
+</html>
