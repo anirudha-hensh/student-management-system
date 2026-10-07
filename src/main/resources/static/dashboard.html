@@ -78,7 +78,7 @@ body {
 
 <a href="#" onclick="loadStudents()">👨‍🎓 Students</a>
 
-<a href="#" onclick="loadPending()">
+<a href="#" onclick="loadPending(); return false;">
     ⏳ Pending Requests
 </a>
 
@@ -169,22 +169,40 @@ function loadStudents() {
 //🔥 LOAD PENDING REQUESTS
 function loadPending() {
 
-    fetch("http://localhost:8080/auth/pending")
+    fetch("http://localhost:8080/auth/pending", {
 
-    .then(res => res.json())
+        method: "GET",
+
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+
+    })
+
+    .then(async res => {
+
+        if (!res.ok) {
+
+            const message = await res.text();
+
+            throw new Error(message || "Unable to load pending requests");
+        }
+
+        return res.json();
+    })
 
     .then(data => {
 
         let html = `
-        <h3 class="mb-4">Pending Student Requests</h3>
+            <h3 class="mb-4">Pending Student Requests</h3>
         `;
 
-        if(data.length === 0){
+        if (!Array.isArray(data) || data.length === 0) {
 
             html += `
-            <div class="alert alert-success">
-                No pending requests
-            </div>
+                <div class="alert alert-success">
+                    No pending requests
+                </div>
             `;
 
         } else {
@@ -192,50 +210,66 @@ function loadPending() {
             data.forEach(u => {
 
                 html += `
+                    <div class="card p-3 mb-3 shadow-sm">
 
-                <div class="card p-3 mb-3 shadow-sm">
+                        <h5>${u.username}</h5>
 
-                    <h5>${u.username}</h5>
+                        <p>
+                            Status:
+                            <span class="badge bg-warning">
+                                ${u.status}
+                            </span>
+                        </p>
 
-                    <p>
-                        Status:
-                        <span class="badge bg-warning">
-                            ${u.status}
-                        </span>
-                    </p>
+                        <button
+                            class="btn btn-success me-2"
+                            onclick="approveStudent('${u.username}')">
 
-                    <div>
-
-                        <button class="btn btn-success me-2"
-                                onclick="approveStudent('${u.username}')">
                             Approve
+
                         </button>
 
-                        <button class="btn btn-danger"
-                                onclick="rejectStudent('${u.username}')">
+                        <button
+                            class="btn btn-danger"
+                            onclick="rejectStudent('${u.username}')">
+
                             Reject
+
                         </button>
 
                     </div>
-
-                </div>
                 `;
             });
         }
 
         document.getElementById("mainContent").innerHTML = html;
 
-    });
+    })
 
+    .catch(error => {
+
+        console.error("Pending requests error:", error);
+
+        Swal.fire({
+            icon: "error",
+            title: "Unable to Load Requests",
+            text: error.message
+        });
+
+    });
 }
 
 
 //🔥 APPROVE
-function approveStudent(username){
+function approveStudent(username) {
 
-    fetch("http://localhost:8080/auth/approve/" + username,{
+    fetch("http://localhost:8080/auth/approve/" + encodeURIComponent(username), {
 
-        method:"PUT"
+        method: "PUT",
+
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
 
     })
 
@@ -243,23 +277,37 @@ function approveStudent(username){
 
     .then(data => {
 
-    	Swal.fire({
-    	    icon:'success',
-    	    title:data
-    	});
+        Swal.fire({
+            icon: data.includes("successfully") ? "success" : "error",
+            title: data
+        });
 
         loadPending();
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        Swal.fire({
+            icon: "error",
+            title: "Server Error",
+            text: "Unable to approve student"
+        });
 
     });
-
 }
 
 // 🔥 REJECT
-function rejectStudent(username){
+function rejectStudent(username) {
 
-    fetch("http://localhost:8080/auth/reject/" + username,{
+    fetch("http://localhost:8080/auth/reject/" + encodeURIComponent(username), {
 
-        method:"DELETE"
+        method: "DELETE",
+
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
 
     })
 
@@ -267,14 +315,25 @@ function rejectStudent(username){
 
     .then(data => {
 
-    	Swal.fire({
-    	    icon:'success',
-    	    title:data
-    	});
+        Swal.fire({
+            icon: data.includes("rejected") ? "success" : "error",
+            title: data
+        });
+
         loadPending();
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        Swal.fire({
+            icon: "error",
+            title: "Server Error",
+            text: "Unable to reject student"
+        });
 
     });
-
 }
 
 // RENDER STUDENTS

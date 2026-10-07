@@ -4,14 +4,30 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.io.Decoders;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 
 public class JwtUtil {
 
-    private static final SecretKey key =
-            Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // Fixed secret key so JWTs remain valid after server restart
+    private static final String SECRET_KEY =
+        System.getenv("JWT_SECRET");
+
+private static final SecretKey key;
+
+static {
+    if (SECRET_KEY == null || SECRET_KEY.isBlank()) {
+        throw new IllegalStateException(
+                "JWT_SECRET environment variable is not configured"
+        );
+    }
+
+    key = Keys.hmacShaKeyFor(
+            Decoders.BASE64.decode(SECRET_KEY)
+    );
+}
 
     private static final long EXPIRATION_TIME =
             1000 * 60 * 60; // 1 hour
@@ -26,19 +42,19 @@ public class JwtUtil {
                 .setExpiration(
                         new Date(System.currentTimeMillis() + EXPIRATION_TIME)
                 )
-                .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     // Validate token and return claims
     public static Claims getClaims(String token) {
 
-        if (token == null) {
+        if (token == null || token.trim().isEmpty()) {
             throw new RuntimeException("Missing token");
         }
 
         if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
+            token = token.substring(7).trim();
         }
 
         return Jwts.parserBuilder()

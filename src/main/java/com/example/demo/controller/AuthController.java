@@ -442,7 +442,7 @@ public class AuthController {
             throw new RuntimeException("Unauthorized");
         }
 
-        return userRepo.findByStatus("PENDING");
+       return userRepo.findByStatusAndRole("PENDING", "STUDENT");
     }
 
 
